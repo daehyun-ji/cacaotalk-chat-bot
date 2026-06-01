@@ -5,23 +5,25 @@ import urllib.parse
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 from openai import OpenAI
-from dotenv import load_dotenv
-
-# [추가] Gemini API 라이브러리 임포트
-# 최신 google-genai 라이브러리 기준 코드를 적용합니다.
 from google import genai
+# [추가] Anthropic(Claude) 라이브러리 임포트
+import anthropic
+from dotenv import load_dotenv
 
 # .env 파일에서 환경변수 로드
 load_dotenv()
 
 app = Flask(__name__)
 
-# OpenAI 및 Gemini 클라이언트 초기화
+# 각 AI 클라이언트 초기화
 client_openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Gemini API 키가 있을 때만 초기화 진행
 gemini_key = os.getenv("GEMINI_API_KEY")
 client_gemini = genai.Client(api_key=gemini_key) if gemini_key else None
+
+# [추가] Claude 클라이언트 초기화
+claude_key = os.getenv("CLAUDE_API_KEY")
+client_claude = anthropic.Anthropic(api_key=claude_key) if claude_key else None
 
 def kakao_text(text):
     """카카오톡 텍스트 응답 규격 생성 (1000자 제한 안전장치)"""
@@ -42,7 +44,7 @@ def home():
     return "Server is running."
 
 # =========================================================
-# [시나리오 1: 질문] AI 선택형 질문 처리 엔드포인트
+# [시나리오 1: 질문] AI 선택형 질문 처리 엔드포인트 (Claude 포함)
 # =========================================================
 @app.route("/ask-ai", methods=["POST"])
 def ask_ai():
@@ -50,18 +52,16 @@ def ask_ai():
     action = data.get("action", {})
     params = action.get("params", {})
 
-    # 오픈빌더에서 설정한 파라미터 가져오기 (매칭 실패 시 기본값 처리)
     ai_type = params.get("ai_type", "ChatGPT").strip()
     user_question = params.get("user_question", "").strip()
 
     if not user_question:
-        return jsonify(kakao_text("질문 내용을 입력해주세요! 용례: 'ChatGPT한테 오늘 날씨 어때? 라고 물어봐'"))
+        return jsonify(kakao_text("질문 내용을 입력해주세요! 용례: 'Claude한테 오늘 급식 맛있어? 라고 물어봐'"))
 
     # 1. ChatGPT 선택 시
     if "chatgpt" in ai_type.lower() or "gpt" in ai_type.lower():
         if not os.getenv("OPENAI_API_KEY"):
             return jsonify(kakao_text("OPENAI_API_KEY 환경변수가 설정되지 않았습니다."))
-        
         try:
             response = client_openai.chat.completions.create(
                 model="gpt-4o-mini",
@@ -80,9 +80,7 @@ def ask_ai():
     elif "gemini" in ai_type.lower() or "제미나이" in ai_type:
         if not client_gemini:
             return jsonify(kakao_text("GEMINI_API_KEY 환경변수가 설정되지 않았습니다."))
-        
         try:
-            # gemini-2.5-flash 모델을 사용하여 빠른 응답 구현
             response = client_gemini.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=f"당신은 친절한 학교 생활 도우미 챗봇입니다. 상냥하고 간결하게 답해주세요. 질문: {user_question}",
@@ -91,13 +89,31 @@ def ask_ai():
         except Exception as e:
             reply = f"Gemini 호출 중 오류 발생: {str(e)}"
             
+    # 3. [추가] Claude 선택 시
+    elif "claude" in ai_type.lower() or "클로드" in ai_type:
+        if not client_claude:
+            return jsonify(kakao_text("CLAUDE_API_KEY 환경변수가 설정되지 않았습니다."))
+        try:
+            # 비용과 속도가 합리적인 claude-3-5-haiku 모델을 사용합니다.
+            response = client_claude.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=400,
+                system="당신은 친절한 학교 생활 도우미 챗봇입니다. 학생의 질문에 상냥하고 간결하게 답해주세요.",
+                messages=[
+                    {"role": "user", "content": user_question}
+                ]
+            )
+            reply = f"🦅 [Claude 답변]\n\n{response.content[0].text.strip()}"
+        except Exception as e:
+            reply = f"Claude 호출 중 오류 발생: {str(e)}"
+            
     else:
-        reply = "지원하지 않는 AI 종류입니다. 'ChatGPT' 또는 'Gemini'를 선택해주세요."
+        reply = "지원하지 않는 AI 종류입니다. 'ChatGPT', 'Gemini', 'Claude' 중 하나를 선택해주세요."
 
     return jsonify(kakao_text(reply))
 
 
-# 기존 제공해주신 기타 기능들 (유지)
+# 기존 제공해주신 기타 기능들
 @app.route("/text", methods=["GET", "POST"])
 def text_skill():
     return jsonify(kakao_text(str(random.randint(1, 10))))
