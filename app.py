@@ -135,42 +135,12 @@ def game_rps():
     else: res = "💀 졌습니다... AI가 좀 하네요."
     return jsonify(kakao_text(f"✌️ [가위바위보]\n\n나: {user}\nAI: {ai}\n\n{res}"))
 
-# 4. [변경됨] 오늘의 운세와 행운의 아이템
-@app.route("/game-luck", methods=["POST"])
-def game_luck():
-    # 1. 운세 상태와 별점 매칭
-    luck_status = [
-        {"title": "대박 대길 (★★★★★)", "quote": "오늘은 뭘 해도 되는 날! 망설이던 일이 있다면 자신 있게 도전해 봐. 네 능력을 보여줄 때야! ✨"},
-        {"title": "평온 무탈 (★★★★☆)", "quote": "큰 걱정 없이 마음이 편안해지는 하루야. 사소한 것에 감사하며 기분 좋게 보내보자. 🍀"},
-        {"title": "소소한 행복 (★★★☆☆)", "quote": "지루한 일상 속에서 뜻밖의 작은 기쁨을 발견하게 될 거야. 매점 가기 좋은 날일지도? 😋"},
-        {"title": "에너지 충전 필요 (★★☆☆☆)", "quote": "조금 피곤하고 지칠 수 있어. 오늘은 무리하지 말고 쉬엄쉬엄 가자. 넌 이미 충분히 잘하고 있어! 🛌"},
-        {"title": "성장의 발판 (★☆☆☆☆)", "quote": "오늘따라 일이 조금 꼬인다고 속상해하지 마. 이 또한 지나가고 나면 널 더 단단하게 만들어 줄 거야. 힘내자! 🔥"}
-    ]
-    
-    # 2. 행운의 아이템 목록
-    items = [
-        "필통 속에 숨어있는 최애 펜 🖊️", 
-        "오늘 급식으로 나올 맛있는 반찬 🍱", 
-        "친구의 따뜻한 한마디나 칭찬 💬", 
-        "주머니 속 달콤한 초콜릿이나 사탕 🍬", 
-        "창밖으로 보이는 맑은 하늘과 구름 ☁️", 
-        "매점에서 파는 시원한 음료수 🍹",
-        "플레이리스트의 첫 번째 추천 곡 🎧"
-    ]
-    
-    # 랜덤으로 하나씩 뽑기
-    today_luck = random.choice(luck_status)
-    lucky_item = random.choice(items)
-    
-    # 카카오톡에 출력될 텍스트 조립
-    reply = (
-        f"🔮 [오늘의 힐링 운세]\n\n"
-        f"📌 오늘의 총운: {today_luck['title']}\n\n"
-        f"💌 챗봇의 응원:\n\"{today_luck['quote']}\"\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"🍀 오늘 행운의 아이템:\n👉 {lucky_item}"
-    )
-    
+# 4. 오늘의 힐링 상자
+@app.route("/game-fortune", methods=["POST"])
+def game_fortune():
+    items = ["따뜻한 코코아", "급식 1등권", "수업 시간 5분 단축", "매점 핫바", "포근한 낮잠", "칭찬 한 마디"]
+    quotes = ["오늘 하루도 정말 고생 많았어!", "넌 충분히 잘하고 있어.", "잠깐 쉬어가도 괜찮아.", "내일은 오늘보다 더 밝을 거야."]
+    reply = f"🎁 [오늘의 힐링 상자]\n\n✨ 행운의 아이템: {random.choice(items)}\n\n{random.choice(quotes)}"
     return jsonify(kakao_text(reply))
 
 if __name__ == "__main__":
