@@ -233,11 +233,20 @@ def school_timetable():
 
         if "hisTimetable" in res_data:
             timetable_rows = res_data["hisTimetable"][1]["row"]
-            lines = [f"⏱️ {row['PERIO']}교시 : {row['ITM_NM']}" for row in timetable_rows]
+            lines = []
+            for row in timetable_rows:
+                period = row.get("PERIO", "?")
+                
+                # [수정 포인트] ITM_NM이 없으면 SBJT_NM을 가져오도록 안전장치 마련
+                subject = row.get("ITM_NM") or row.get("SBJT_NM", "자율/공백")
+                
+                lines.append(f"⏱️ {period}교시 : {subject}")
+                
             timetable_text = "\n".join(lines)
             reply_text = f"📅 오늘 ({grade}학년 {room}반) 시간표:\n\n{timetable_text}"
         else:
             reply_text = f"오늘 {grade}학년 {room}반의 시간표가 없거나 주말/공휴일입니다. 🏖️"
+            
     except Exception as e:
         reply_text = f"시간표를 가져오는 중 오류 발생: {str(e)}"
 
