@@ -46,14 +46,15 @@ quiz_sessions = {}
 # 퀴즈 문제 데이터베이스
 # =========================================================
 QUIZ_DATA = [
-    # 사자성어
-    {"type": "사자성어", "question": "고진감래 (苦盡甘來)", "answer": "고진감래", "hints": ["고생 끝에 즐거움이 온다는 뜻", "苦(쓸 고), 盡(다할 진), 甘(달 감), 來(올 래)", "영어로는 'No pain, no gain'과 비슷해", "고생이 다하면 달콤함이 온다는 의미", "고_ 감_래 (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "일석이조 (一石二鳥)", "answer": "일석이조", "hints": ["돌 하나로 새 두 마리를 잡는다는 뜻", "영어로는 'Two birds with one stone'", "一(하나 일), 石(돌 석), 二(둘 이), 鳥(새 조)", "한 가지 행동으로 두 가지 이득을 얻는 것", "일_ 이_ (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "오리무중 (五里霧中)", "answer": "오리무중", "hints": ["오 리나 되는 짙은 안개 속에 있다는 뜻", "상황을 전혀 파악하지 못할 때 쓰는 표현", "五(다섯 오), 里(마을 리), 霧(안개 무), 中(가운데 중)", "미궁에 빠진 상태를 뜻해", "오_무_ (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "전화위복 (轉禍爲福)", "answer": "전화위복", "hints": ["재앙이 바뀌어 오히려 복이 된다는 뜻", "轉(구를 전), 禍(재앙 화), 爲(될 위), 福(복 복)", "나쁜 일이 좋은 결과로 이어질 때 쓰는 말", "화를 복으로 바꾼다는 의미", "전_위_ (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "청출어람 (靑出於藍)", "answer": "청출어람", "hints": ["쪽빛은 쪽에서 나왔지만 쪽보다 더 푸르다는 뜻", "제자가 스승보다 뛰어남을 비유하는 말", "靑(푸를 청), 出(날 출), 於(어조사 어), 藍(쪽 람)", "스승을 능가하는 제자를 뜻해", "청_어_ (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "마이동풍 (馬耳東風)", "answer": "마이동풍", "hints": ["말의 귀에 동쪽 바람이라는 뜻", "남의 말을 전혀 귀담아듣지 않을 때 쓰는 표현", "馬(말 마), 耳(귀 이), 東(동녘 동), 風(바람 풍)", "귓등으로도 안 듣는 상황", "마_동_ (빈칸 채우기)"]},
-    {"type": "사자성어", "question": "금상첨화 (錦上添花)", "answer": "금상첨화", "hints": ["비단 위에 꽃을 더한다는 뜻", "좋은 것 위에 더 좋은 것이 더해질 때 쓰는 말", "錦(비단 금), 上(위 상), 添(더할 첨), 花(꽃 화)", "이미 좋은 상황이 더 좋아질 때", "금_첨_ (빈칸 채우기)"]},
+    # 사자성어 — 앞 2글자 공개, 뒤 2글자를 맞추는 방식
+    # display: 문제에 표시할 텍스트 / answer: 뒤 2글자
+    {"type": "사자성어", "display": "고진___ (苦盡甘來)\n뜻: 고생 끝에 즐거움이 온다", "question": "고진▢▢ (苦盡甘來)", "answer": "감래", "hints": ["'달 감(甘)' 자로 시작해", "달콤함이 온다는 뜻이야", "甘(달 감), 來(올 래)", "감으로 시작하는 두 글자", "감_ (마지막 글자 힌트: 올 래)"]},
+    {"type": "사자성어", "display": "일석___ (一石二鳥)\n뜻: 돌 하나로 새 두 마리를 잡는다", "question": "일석▢▢ (一石二鳥)", "answer": "이조", "hints": ["'둘 이(二)' 자로 시작해", "새를 뜻하는 한자가 마지막에 와", "二(둘 이), 鳥(새 조)", "이로 시작하는 두 글자", "이_ (마지막 글자 힌트: 새 조)"]},
+    {"type": "사자성어", "display": "오리___ (五里霧中)\n뜻: 상황을 전혀 파악하지 못하는 상태", "question": "오리▢▢ (五里霧中)", "answer": "무중", "hints": ["'안개 무(霧)' 자로 시작해", "안개 속을 뜻하는 표현이야", "霧(안개 무), 中(가운데 중)", "무로 시작하는 두 글자", "무_ (마지막 글자 힌트: 가운데 중)"]},
+    {"type": "사자성어", "display": "전화___ (轉禍爲福)\n뜻: 재앙이 바뀌어 오히려 복이 된다", "question": "전화▢▢ (轉禍爲福)", "answer": "위복", "hints": ["'될 위(爲)' 자로 시작해", "복을 뜻하는 한자가 마지막에 와", "爲(될 위), 福(복 복)", "위로 시작하는 두 글자", "위_ (마지막 글자 힌트: 복 복)"]},
+    {"type": "사자성어", "display": "청출___ (靑出於藍)\n뜻: 제자가 스승보다 더 뛰어남", "question": "청출▢▢ (靑出於藍)", "answer": "어람", "hints": ["'어조사 어(於)' 자로 시작해", "쪽(藍)을 뜻하는 한자가 마지막에 와", "於(어조사 어), 藍(쪽 람)", "어로 시작하는 두 글자", "어_ (마지막 글자 힌트: 쪽 람)"]},
+    {"type": "사자성어", "display": "마이___ (馬耳東風)\n뜻: 남의 말을 전혀 귀담아듣지 않음", "question": "마이▢▢ (馬耳東風)", "answer": "동풍", "hints": ["'동녘 동(東)' 자로 시작해", "바람을 뜻하는 한자가 마지막에 와", "東(동녘 동), 風(바람 풍)", "동으로 시작하는 두 글자", "동_ (마지막 글자 힌트: 바람 풍)"]},
+    {"type": "사자성어", "display": "금상___ (錦上添花)\n뜻: 좋은 것 위에 더 좋은 것이 더해짐", "question": "금상▢▢ (錦上添花)", "answer": "첨화", "hints": ["'더할 첨(添)' 자로 시작해", "꽃을 뜻하는 한자가 마지막에 와", "添(더할 첨), 花(꽃 화)", "첨으로 시작하는 두 글자", "첨_ (마지막 글자 힌트: 꽃 화)"]},
     # 속담
     {"type": "속담", "question": "가는 말이 고와야 ___이/가 곱다", "answer": "오는 말", "hints": ["상대방을 대하는 태도에 관한 속담", "말하는 것과 관련된 표현이야", "상호 관계를 뜻하는 속담", "내가 잘 해야 상대도 잘 한다는 의미", "가는 것과 반대되는 것은?"]},
     {"type": "속담", "question": "공든 탑이 ___", "answer": "무너지랴", "hints": ["정성껏 쌓은 것은 쉽게 무너지지 않는다는 속담", "노력의 결과는 사라지지 않는다는 의미", "탑과 관련된 표현이야", "공들인 것의 결과에 관한 속담", "탑이 어떻게 될까? (부정형)"]},
@@ -281,6 +282,7 @@ def game_quiz_start():
     if user_id in quiz_sessions:
         session = quiz_sessions[user_id]
         q = session["quiz"]
+        display = q.get("display", q["question"])
         tries_left = 5 - session["tries"]
         hint_count = session["tries"]
         hint_text = ""
@@ -288,12 +290,18 @@ def game_quiz_start():
             shown_hints = q["hints"][:hint_count]
             hint_text = "\n" + "\n".join([f"💡 힌트{i+1}: {h}" for i, h in enumerate(shown_hints)])
 
+        # 사자성어는 뒤 2글자를 맞추는 것임을 안내
+        if q["type"] == "사자성어":
+            guide = "✏️ 빈칸(▢▢)에 들어갈 2글자를 입력하세요!"
+        else:
+            guide = "✏️ 정답을 채팅창에 입력해주세요!"
+
         reply = (
             f"🎯 [{q['type']}] 진행 중인 퀴즈가 있어요!\n\n"
-            f"❓ {q['question']}\n"
+            f"❓ {display}\n"
             f"{hint_text}\n\n"
             f"남은 기회: {tries_left}번 🎲\n"
-            f"정답을 채팅창에 입력해주세요!"
+            f"{guide}"
         )
         return jsonify(kakao_text(reply))
 
@@ -305,11 +313,19 @@ def game_quiz_start():
         "solved": False
     }
 
+    display = q.get("display", q["question"])
+
+    # 사자성어는 뒤 2글자를 맞추는 것임을 안내
+    if q["type"] == "사자성어":
+        guide = "✏️ 빈칸(▢▢)에 들어갈 뒤 2글자를 입력하세요!\n예) 감래, 이조, 동풍 등"
+    else:
+        guide = "✏️ 정답을 채팅창에 입력해주세요!"
+
     reply = (
         f"🎯 [{q['type']}] 퀴즈 시작!\n\n"
-        f"❓ {q['question']}\n\n"
+        f"❓ {display}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"✏️ 정답을 채팅창에 입력해주세요!\n"
+        f"{guide}\n"
         f"🎲 기회: 5번  💡 틀릴 때마다 힌트 제공\n"
         f"🔄 포기하려면 '포기'를 입력하세요"
     )
@@ -333,9 +349,11 @@ def game_quiz_answer():
     # 포기 처리
     if user_input in ["포기", "skip", "그만", "취소"]:
         answer = q["answer"]
+        full_q = q.get("question", q.get("display", ""))
         del quiz_sessions[user_id]
         return jsonify(kakao_text(
             f"😢 퀴즈를 포기했습니다.\n\n"
+            f"❓ {full_q}\n"
             f"정답은 👉 【{answer}】 이었어요!\n\n"
             f"다음엔 꼭 맞춰보세요! 💪"
         ))
@@ -344,16 +362,18 @@ def game_quiz_answer():
     correct = q["answer"].replace(" ", "").lower()
     given = user_input.replace(" ", "").lower()
 
+    display = q.get("display", q["question"])
+
     if given == correct:
         tries = session["tries"] + 1
         del quiz_sessions[user_id]
         emoji = "🏆" if tries == 1 else "🎉" if tries <= 3 else "😅"
         return jsonify(kakao_text(
             f"{emoji} 정답입니다!\n\n"
-            f"❓ {q['question']}\n"
+            f"❓ {display}\n"
             f"✅ 정답: 【{q['answer']}】\n\n"
             f"도전 횟수: {tries}번 만에 성공!\n"
-            f"🎯 새 퀴즈를 시작하려면 다시 !퀴즈를 입력해주세요!"
+            f"🎯 새 퀴즈를 시작하려면 !퀴즈를 입력해주세요!"
         ))
 
     # 오답 처리
@@ -363,23 +383,30 @@ def game_quiz_answer():
 
     if tries_left <= 0:
         answer = q["answer"]
+        display = q.get("display", q["question"])
         del quiz_sessions[user_id]
         return jsonify(kakao_text(
             f"💀 아쉽게도 기회를 모두 소진했어요!\n\n"
-            f"❓ {q['question']}\n"
+            f"❓ {display}\n"
             f"✅ 정답: 【{answer}】\n\n"
-            f"🔄 새 퀴즈를 시작하려면 다시 !퀴즈를 입력해주세요!"
+            f"🔄 새 퀴즈를 시작하려면 !퀴즈를 입력해주세요!"
         ))
 
     # 힌트 제공
     hint = q["hints"][tries_used - 1]
     all_hints = "\n".join([f"💡 힌트{i+1}: {h}" for i, h in enumerate(q["hints"][:tries_used])])
+    display = q.get("display", q["question"])
+
+    if q["type"] == "사자성어":
+        guide = "▢▢에 들어갈 2글자를 입력해주세요!"
+    else:
+        guide = "정답을 입력해주세요!"
 
     return jsonify(kakao_text(
         f"❌ 틀렸어요! 다시 도전해보세요.\n\n"
-        f"❓ {q['question']}\n\n"
+        f"❓ {display}\n\n"
         f"{all_hints}\n\n"
-        f"남은 기회: {tries_left}번 🎲\n"
+        f"남은 기회: {tries_left}번 🎲  {guide}\n"
         f"포기하려면 '포기'를 입력하세요"
     ))
 
