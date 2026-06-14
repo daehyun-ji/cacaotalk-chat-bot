@@ -1,9 +1,8 @@
-Flask==3.0.3
-gunicorn==22.0.0
-requests==2.32.3
+Flask==3.0.2
+requests==2.31.0
 beautifulsoup4==4.12.3
-openai
-google-genai
-anthropic
-python-dotenv
-lxml
+openai==1.14.1
+google-genai==0.1.1
+anthropic==0.21.3
+python-dotenv==1.0.1
+lxml==5.1.0
