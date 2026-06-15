@@ -2,7 +2,6 @@ import os
 import random
 import requests
 import re
-import urllib.parse
 from datetime import datetime
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
@@ -29,25 +28,20 @@ client_claude = anthropic.Anthropic(api_key=claude_key) if claude_key else None
 
 # 나이스 API 설정
 NEIS_API_KEY = os.getenv("NEIS_API_KEY", "")
-ATPT_CODE = "B10"
-SCHUL_CODE = "7010537"
+ATPT_CODE = os.getenv("ATPT_CODE", "B10")
+SCHUL_CODE = os.getenv("SCHUL_CODE", "7010537")
 
 # =========================================================
 # 서버 메모리 저장소 (재시작 시 초기화됨)
 # =========================================================
-
-# 운세 사용 기록: { "유저ID_날짜": True }
-luck_used_log = {}
-
-# 퀴즈 진행 상태: { "유저ID": { quiz 정보 } }
-quiz_sessions = {}
+luck_used_log = {}   # { "유저ID_날짜": True }
+quiz_sessions = {}   # { "유저ID": { quiz 정보 } }
 
 # =========================================================
 # 퀴즈 문제 데이터베이스
 # =========================================================
 QUIZ_DATA = [
     # 사자성어 — 앞 2글자 공개, 뒤 2글자를 맞추는 방식
-    # display: 문제에 표시할 텍스트 / answer: 뒤 2글자
     {"type": "사자성어", "display": "고진___ (苦盡甘來)\n뜻: 고생 끝에 즐거움이 온다", "question": "고진▢▢ (苦盡甘來)", "answer": "감래", "hints": ["'달 감(甘)' 자로 시작해", "달콤함이 온다는 뜻이야", "甘(달 감), 來(올 래)", "감으로 시작하는 두 글자", "감_ (마지막 글자 힌트: 올 래)"]},
     {"type": "사자성어", "display": "일석___ (一石二鳥)\n뜻: 돌 하나로 새 두 마리를 잡는다", "question": "일석▢▢ (一石二鳥)", "answer": "이조", "hints": ["'둘 이(二)' 자로 시작해", "새를 뜻하는 한자가 마지막에 와", "二(둘 이), 鳥(새 조)", "이로 시작하는 두 글자", "이_ (마지막 글자 힌트: 새 조)"]},
     {"type": "사자성어", "display": "오리___ (五里霧中)\n뜻: 상황을 전혀 파악하지 못하는 상태", "question": "오리▢▢ (五里霧中)", "answer": "무중", "hints": ["'안개 무(霧)' 자로 시작해", "안개 속을 뜻하는 표현이야", "霧(안개 무), 中(가운데 중)", "무로 시작하는 두 글자", "무_ (마지막 글자 힌트: 가운데 중)"]},
@@ -62,7 +56,7 @@ QUIZ_DATA = [
     {"type": "속담", "question": "세 살 버릇 ___까지 간다", "answer": "여든", "hints": ["어릴 때 습관이 평생 간다는 속담", "나이와 관련된 표현이야", "인생의 끝 무렵을 나타내는 나이", "60보다 크고 90보다 작은 숫자", "팔십이라고도 불러"]},
     {"type": "속담", "question": "백지장도 맞들면 낫다", "answer": "백지장도 맞들면 낫다", "hints": ["협동과 협력에 관한 속담", "종이와 관련된 표현이야", "혼자보다 둘이 낫다는 의미", "白紙張(흰 종이)을 함께 드는 것", "전체 속담을 그대로 입력해봐"]},
     {"type": "속담", "question": "하늘이 무너져도 솟아날 ___이/가 있다", "answer": "구멍", "hints": ["아무리 어려운 상황도 살 길이 있다는 뜻", "빠져나갈 수 있는 통로", "뚫려 있는 공간을 뜻하는 단어", "도넛 가운데 있는 것", "구_ (한 글자 힌트)"]},
-    # 인물/캐릭터 퀴즈
+    # 캐릭터 퀴즈
     {"type": "캐릭터 퀴즈", "question": "저는 초록색 옷을 입고 공주를 구하러 다니며, 삼각형 모양의 유물을 모으는 게임의 주인공입니다. 저는 누구일까요?", "answer": "링크", "hints": ["닌텐도 게임의 캐릭터야", "젤다 시리즈의 주인공", "초록색 모자와 귀가 뾰족한 특징", "이름이 두 글자야", "ㄹ으로 시작하는 이름"]},
     {"type": "캐릭터 퀴즈", "question": "저는 빨간 모자와 파란 멜빵바지를 입고 버섯을 먹으면 커지며, 쿠파를 물리치는 게임의 주인공입니다. 저는 누구일까요?", "answer": "마리오", "hints": ["닌텐도의 대표 캐릭터", "이탈리아 출신 배관공", "쌍둥이 동생의 이름은 루이지", "이름이 세 글자야", "ㅁ으로 시작하는 이름"]},
     {"type": "캐릭터 퀴즈", "question": "저는 노란색 전기 쥐로 볼에 빨간 동그라미가 있고 '피카피카'라고 말합니다. 저는 누구일까요?", "answer": "피카츄", "hints": ["포켓몬의 마스코트 캐릭터", "전기 타입 포켓몬", "지우의 파트너 포켓몬", "이름이 세 글자야", "ㅍ으로 시작하는 이름"]},
@@ -77,16 +71,16 @@ QUIZ_DATA = [
 ]
 
 
+# =========================================================
+# 공통 함수
+# =========================================================
+
 def kakao_text(text):
     safe_text = text[:950] + "..." if len(text) > 950 else text
     return {
         "version": "2.0",
         "template": {
-            "outputs": [{
-                "simpleText": {
-                    "text": safe_text
-                }
-            }]
+            "outputs": [{"simpleText": {"text": safe_text}}]
         }
     }
 
@@ -97,33 +91,42 @@ def get_neis_meal():
     today = datetime.today().strftime("%Y%m%d")
     url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
     params = {
-        "KEY": NEIS_API_KEY,
-        "Type": "json",
-        "ATPT_OFCDC_SC_CODE": ATPT_CODE,
-        "SD_SCHUL_CODE": SCHUL_CODE,
+        "KEY": NEIS_API_KEY, "Type": "json",
+        "ATPT_OFCDC_SC_CODE": ATPT_CODE, "SD_SCHUL_CODE": SCHUL_CODE,
         "MLSV_YMD": today,
     }
     try:
-        response = requests.get(url, params=params, timeout=5)
-        res_data = response.json()
+        res_data = requests.get(url, params=params, timeout=5).json()
         if "mealServiceDietInfo" in res_data:
             meal_info = res_data["mealServiceDietInfo"][1]["row"][0]
             pure_meal = meal_info["DDISH_NM"].replace("<br/>", "\n")
             pure_meal = re.sub(r'\([0-9.]+\)', '', pure_meal)
             return pure_meal
-        else:
-            return "오늘 등록된 급식 정보가 없습니다."
+        return "오늘 등록된 급식 정보가 없습니다."
     except Exception as e:
         return f"급식 조회 중 오류 발생: {str(e)}"
 
 
 def get_kakao_user_id(data):
-    """카카오톡 요청에서 사용자 ID 추출"""
     try:
         return data.get("userRequest", {}).get("user", {}).get("id", "unknown")
     except Exception:
         return "unknown"
 
+
+def get_quiz_guide(q_type, context="start"):
+    """퀴즈 타입별 입력 안내 문구"""
+    if q_type == "사자성어":
+        if context == "start":
+            return "✏️ 빈칸(▢▢)에 들어갈 뒤 2글자를 입력하세요!\n예) 감래, 동풍, 위복 등"
+        return "✏️ 빈칸(▢▢)에 들어갈 2글자를 입력하세요!"
+    else:
+        return "✏️ 정답을 채팅창에 바로 입력해주세요!"
+
+
+# =========================================================
+# 기본 라우트
+# =========================================================
 
 @app.route("/", methods=["GET"])
 def home():
@@ -131,7 +134,7 @@ def home():
 
 
 # =========================================================
-# 시나리오 1: 질문 기능
+# 시나리오 1: AI 질문 기능
 # =========================================================
 
 @app.route("/gpt", methods=["POST"])
@@ -147,8 +150,7 @@ def ask_gpt():
                 {"role": "system", "content": "당신은 유능하고 친절한 학교 생활 도우미 챗봇입니다. 답변은 간결하고 명확하게 하세요."},
                 {"role": "user", "content": tt}
             ],
-            temperature=0.7,
-            max_tokens=400
+            temperature=0.7, max_tokens=400
         )
         result_text = f"🤖 [ChatGPT 답변]\n\n{response.choices[0].message.content.strip()}"
     except Exception as e:
@@ -181,7 +183,7 @@ def ask_claude():
     if not client_claude: return jsonify(kakao_text("CLAUDE_API_KEY가 설정되지 않았습니다."))
     try:
         response = client_claude.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-haiku-4-5-20251001",
             max_tokens=400,
             system="당신은 유능하고 친절한 학교 생활 도우미 챗봇입니다. 답변은 간결하고 명확하게 하세요.",
             messages=[{"role": "user", "content": tt}]
@@ -193,37 +195,32 @@ def ask_claude():
 
 
 # =========================================================
-# 시나리오 2: 도움 기능
+# 시나리오 2: 학교 도움 기능
 # =========================================================
 
 @app.route("/meal", methods=["POST"])
 def school_meal():
     meal_result = get_neis_meal()
-    reply_text = f"🍱 오늘의 학교 급식 (중식):\n\n{meal_result}"
-    return jsonify(kakao_text(reply_text))
+    return jsonify(kakao_text(f"🍱 오늘의 학교 급식 (중식):\n\n{meal_result}"))
 
 
 @app.route("/dinner", methods=["POST"])
 def dinner_recommend():
     meal_result = get_neis_meal()
-    if "오류" not in meal_result and "없습니다" not in meal_result and client_openai:
+    if "오류" not in meal_result and "없습니다" not in meal_result and client_claude:
         try:
-            response = client_openai.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "당신은 영양사 출신의 친절한 학교 챗봇입니다. 제공된 점심 급식 메뉴와 전혀 겹치지 않으면서 학생들이 선호할 만한 맛있는 저녁 메뉴 3가지를 추천하고 그 이유를 한 줄로 요약하세요."},
-                    {"role": "user", "content": f"오늘 학교 점심 메뉴야:\n{meal_result}\n\n이것과 겹치지 않는 저녁 메뉴를 추천해줘."}
-                ],
-                temperature=0.7,
-                max_tokens=400
+            response = client_claude.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=400,
+                system="당신은 영양사 출신의 친절한 학교 챗봇입니다. 제공된 점심 급식 메뉴와 전혀 겹치지 않으면서 학생들이 선호할 만한 맛있는 저녁 메뉴 3가지를 추천하고 그 이유를 한 줄로 요약하세요.",
+                messages=[{"role": "user", "content": f"오늘 학교 점심 메뉴야:\n{meal_result}\n\n이것과 겹치지 않는 저녁 메뉴를 추천해줘."}]
             )
-            recommendation = response.choices[0].message.content.strip()
+            recommendation = response.content[0].text.strip()
         except Exception as e:
             recommendation = f"AI 저녁 추천 중 오류가 발생했습니다: {str(e)}"
     else:
         recommendation = "오늘 급식 데이터가 존재하지 않아 맞춤 추천이 어렵습니다. 삼겹살이나 따뜻한 부대찌개는 어떠신가요? 🥩"
-    reply_text = f"🌙 AI 추천 저녁 메뉴:\n\n{recommendation}"
-    return jsonify(kakao_text(reply_text))
+    return jsonify(kakao_text(f"🌙 AI 추천 저녁 메뉴:\n\n{recommendation}"))
 
 
 @app.route("/timetable", methods=["POST"])
@@ -233,32 +230,22 @@ def school_timetable():
     params = data.get("action", {}).get("params", {})
     raw_grade = params.get("학년") or params.get("파라미터") or "1"
     raw_room = params.get("반") or params.get("파라미터2") or "1"
-    grade_match = re.search(r'\d+', str(raw_grade))
-    room_match = re.search(r'\d+', str(raw_room))
-    grade = grade_match.group() if grade_match else "1"
-    room = room_match.group() if room_match else "1"
-    url = "https://open.neis.go.kr/hub/hisTimetable"
+    grade = (re.search(r'\d+', str(raw_grade)) or type('', (), {'group': lambda s: '1'})()).group()
+    room = (re.search(r'\d+', str(raw_room)) or type('', (), {'group': lambda s: '1'})()).group()
     api_params = {
-        "KEY": NEIS_API_KEY,
-        "Type": "json",
-        "ATPT_OFCDC_SC_CODE": ATPT_CODE,
-        "SD_SCHUL_CODE": SCHUL_CODE,
-        "ALL_TI_YMD": today,
-        "GRADE": grade,
-        "CLASS_NM": room
+        "KEY": NEIS_API_KEY, "Type": "json",
+        "ATPT_OFCDC_SC_CODE": ATPT_CODE, "SD_SCHUL_CODE": SCHUL_CODE,
+        "ALL_TI_YMD": today, "GRADE": grade, "CLASS_NM": room
     }
     try:
-        response = requests.get(url, params=api_params, timeout=5)
-        res_data = response.json()
+        res_data = requests.get("https://open.neis.go.kr/hub/hisTimetable", params=api_params, timeout=5).json()
         if "hisTimetable" in res_data:
-            timetable_rows = res_data["hisTimetable"][1]["row"]
             lines = []
-            for row in timetable_rows:
+            for row in res_data["hisTimetable"][1]["row"]:
                 period = row.get("PERIO", "?")
                 subject = row.get("ITRT_CNTNT") or row.get("ITM_NM") or row.get("SBJT_NM", "자율/공백")
                 lines.append(f"⏱️ {period}교시 : {subject}")
-            timetable_text = "\n".join(lines)
-            reply_text = f"📅 오늘 ({grade}학년 {room}반) 시간표:\n\n{timetable_text}"
+            reply_text = f"📅 오늘 ({grade}학년 {room}반) 시간표:\n\n" + "\n".join(lines)
         else:
             reply_text = f"오늘 {grade}학년 {room}반의 시간표가 없거나 주말/공휴일입니다. 🏖️"
     except Exception as e:
@@ -270,7 +257,7 @@ def school_timetable():
 # 시나리오 3: 게임 기능
 # =========================================================
 
-# ── 1. 퀴즈 게임 (/game-quiz: 문제 출제, /game-quiz-answer: 정답 입력) ──
+# ── 1. 퀴즈 게임 ──
 
 @app.route("/game-quiz", methods=["POST"])
 def game_quiz_start():
@@ -284,50 +271,30 @@ def game_quiz_start():
         q = session["quiz"]
         display = q.get("display", q["question"])
         tries_left = 5 - session["tries"]
-        hint_count = session["tries"]
         hint_text = ""
-        if hint_count > 0:
-            shown_hints = q["hints"][:hint_count]
-            hint_text = "\n" + "\n".join([f"💡 힌트{i+1}: {h}" for i, h in enumerate(shown_hints)])
-
-        # 사자성어는 뒤 2글자를 맞추는 것임을 안내
-        if q["type"] == "사자성어":
-            guide = "✏️ 빈칸(▢▢)에 들어갈 2글자를 입력하세요!"
-        else:
-            guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
-
+        if session["tries"] > 0:
+            shown = q["hints"][:session["tries"]]
+            hint_text = "\n" + "\n".join([f"💡 힌트{i+1}: {h}" for i, h in enumerate(shown)])
         reply = (
             f"🎯 [{q['type']}] 진행 중인 퀴즈가 있어요!\n\n"
-            f"❓ {display}\n"
+            f"❓ {display}"
             f"{hint_text}\n\n"
             f"남은 기회: {tries_left}번 🎲\n"
-            f"{guide}"
+            f"{get_quiz_guide(q['type'], 'retry')}\n"
+            f"🔄 포기하려면 '포기'를 입력하세요"
         )
         return jsonify(kakao_text(reply))
 
     # 새 문제 출제
     q = random.choice(QUIZ_DATA)
-    quiz_sessions[user_id] = {
-        "quiz": q,
-        "tries": 0,
-        "solved": False
-    }
-
+    quiz_sessions[user_id] = {"quiz": q, "tries": 0}
     display = q.get("display", q["question"])
-
-    # 사자성어는 뒤 2글자를 맞추는 것임을 안내
-    if q["type"] == "사자성어":
-        guide = "✏️ 빈칸(▢▢)에 들어갈 뒤 2글자를 입력하세요!\n예) 감래, 이조, 동풍 등"
-    else:
-        guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
-
     reply = (
         f"🎯 [{q['type']}] 퀴즈 시작!\n\n"
         f"❓ {display}\n\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"{guide}\n"
+        f"{get_quiz_guide(q['type'], 'start')}\n"
         f"🎲 기회: 5번  💡 틀릴 때마다 힌트 제공\n"
-        f"⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
         f"🔄 포기하려면 '포기'를 입력하세요"
     )
     return jsonify(kakao_text(reply))
@@ -340,30 +307,26 @@ def game_quiz_answer():
     user_id = get_kakao_user_id(data)
     user_input = data.get("action", {}).get("params", {}).get("파라미터", "").strip()
 
-    # 세션 없는 경우
     if user_id not in quiz_sessions:
         return jsonify(kakao_text("❗ 진행 중인 퀴즈가 없어요!\n퀴즈 시작 버튼을 눌러주세요. 🎯"))
 
     session = quiz_sessions[user_id]
     q = session["quiz"]
+    display = q.get("display", q["question"])
 
     # 포기 처리
     if user_input in ["포기", "skip", "그만", "취소"]:
-        answer = q["answer"]
-        full_q = q.get("question", q.get("display", ""))
         del quiz_sessions[user_id]
         return jsonify(kakao_text(
             f"😢 퀴즈를 포기했습니다.\n\n"
-            f"❓ {full_q}\n"
-            f"정답은 👉 【{answer}】 이었어요!\n\n"
+            f"❓ {display}\n"
+            f"정답은 👉 【{q['answer']}】 이었어요!\n\n"
             f"다음엔 꼭 맞춰보세요! 💪"
         ))
 
     # 정답 비교 (공백·대소문자 무시)
     correct = q["answer"].replace(" ", "").lower()
     given = user_input.replace(" ", "").lower()
-
-    display = q.get("display", q["question"])
 
     if given == correct:
         tries = session["tries"] + 1
@@ -383,36 +346,27 @@ def game_quiz_answer():
     tries_left = 5 - tries_used
 
     if tries_left <= 0:
-        answer = q["answer"]
-        display = q.get("display", q["question"])
         del quiz_sessions[user_id]
         return jsonify(kakao_text(
             f"💀 아쉽게도 기회를 모두 소진했어요!\n\n"
             f"❓ {display}\n"
-            f"✅ 정답: 【{answer}】\n\n"
+            f"✅ 정답: 【{q['answer']}】\n\n"
             f"🔄 새 퀴즈를 시작하려면 퀴즈 버튼을 눌러주세요!"
         ))
 
     # 힌트 제공
-    hint = q["hints"][tries_used - 1]
     all_hints = "\n".join([f"💡 힌트{i+1}: {h}" for i, h in enumerate(q["hints"][:tries_used])])
-    display = q.get("display", q["question"])
-
-    if q["type"] == "사자성어":
-        guide = "▢▢에 들어갈 2글자를 입력해주세요!"
-    else:
-        guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
-
     return jsonify(kakao_text(
         f"❌ 틀렸어요! 다시 도전해보세요.\n\n"
         f"❓ {display}\n\n"
         f"{all_hints}\n\n"
-        f"남은 기회: {tries_left}번 🎲  {guide}\n"
-        f"포기하려면 '포기'를 입력하세요"
+        f"남은 기회: {tries_left}번 🎲\n"
+        f"{get_quiz_guide(q['type'], 'retry')}\n"
+        f"🔄 포기하려면 '포기'를 입력하세요"
     ))
 
 
-# ── 2. 업다운 게임 (/game-updown) ──
+# ── 2. 업다운 게임 ──
 
 @app.route("/game-updown", methods=["POST"])
 def game_updown():
@@ -423,17 +377,17 @@ def game_updown():
         val_match = re.search(r'\d+', user_val)
         if val_match:
             val = int(val_match.group())
-            if val > target: res = f"⬇️ DOWN! 입력하신 {val}보다 낮습니다."
-            elif val < target: res = f"⬆️ UP! 입력하신 {val}보다 높습니다."
-            else: res = f"🎊 정답입니다! 축하합니다. 정답은 {val}이었습니다!"
+            if val > target:   res = f"⬇️ DOWN! {val}보다 낮습니다."
+            elif val < target: res = f"⬆️ UP! {val}보다 높습니다."
+            else:              res = f"🎊 정답! {val}이 맞습니다!"
         else:
-            res = "숫자를 포함해서 말해주세요! (예: 50)"
+            res = "숫자를 포함해서 입력해주세요! (예: 50)"
     except Exception:
-        res = "숫자 판정 중 오류가 발생했습니다. 숫자로 다시 입력해주세요!"
+        res = "숫자로 다시 입력해주세요!"
     return jsonify(kakao_text(f"🔢 [업다운 숫자맞추기]\n\n{res}"))
 
 
-# ── 3. 가위바위보 (/game-rps) ──
+# ── 3. 가위바위보 ──
 
 @app.route("/game-rps", methods=["POST"])
 def game_rps():
@@ -441,18 +395,17 @@ def game_rps():
     user = data.get("action", {}).get("params", {}).get("파라미터", "").strip()
     ai = random.choice(["가위", "바위", "보"])
     if user not in ["가위", "바위", "보"]:
-        return jsonify(kakao_text("📢 '가위', '바위', '보' 중 하나만 정확하게 입력해 주세요!"))
+        return jsonify(kakao_text("📢 '가위', '바위', '보' 중 하나만 입력해 주세요!"))
     if user == ai:
-        res = "🤝 비겼습니다! 호적수를 만났군요. 한 번 더?"
+        res = "🤝 비겼습니다! 한 번 더?"
     elif (user == "가위" and ai == "보") or (user == "바위" and ai == "가위") or (user == "보" and ai == "바위"):
-        res = "🏆 이겼습니다! 역시 오늘 운이 따라주는 날이네요!"
+        res = "🏆 이겼습니다! 오늘 운이 따르네요!"
     else:
-        res = "💀 졌습니다... 인공지능의 벽은 높군요. 복수하러 고?"
-    reply = f"✌️ [가위바위보 한판 승부]\n\n나: {user}\nAI: {ai}\n\n{res}"
-    return jsonify(kakao_text(reply))
+        res = "💀 졌습니다... 복수하러 고?"
+    return jsonify(kakao_text(f"✌️ [가위바위보]\n\n나: {user}\nAI: {ai}\n\n{res}"))
 
 
-# ── 4. 오늘의 운세 (/game-luck) — 사용자 ID 기준 하루 1회 제한 ──
+# ── 4. 오늘의 운세 (사용자 ID 기준 하루 1회 제한) ──
 
 @app.route("/game-luck", methods=["POST"])
 def game_luck():
@@ -461,7 +414,6 @@ def game_luck():
     today_str = datetime.today().strftime("%Y%m%d")
     log_key = f"{user_id}_{today_str}"
 
-    # 하루 1회 제한 체크
     if log_key in luck_used_log:
         return jsonify(kakao_text(
             "🔮 오늘의 운세는 이미 확인하셨어요!\n\n"
@@ -488,10 +440,8 @@ def game_luck():
         "매점에서 파는 아주 시원한 탄산음료 🍹",
         "내 플레이리스트의 첫 번째 추천 곡 🎧"
     ]
-
     today_luck = random.choice(luck_status)
     lucky_item = random.choice(items)
-
     reply = (
         f"🔮 [오늘의 힐링 운세]\n\n"
         f"📌 오늘의 총운: {today_luck['title']}\n\n"
@@ -510,8 +460,7 @@ def text_skill(): return jsonify(kakao_text(str(random.randint(1, 10))))
 @app.route("/echo", methods=["POST"])
 def echo_skill():
     data = request.get_json(silent=True) or {}
-    user_input = data.get("userRequest", {}).get("utterance", "입력값이 없습니다.")
-    return jsonify(kakao_text(user_input))
+    return jsonify(kakao_text(data.get("userRequest", {}).get("utterance", "입력값이 없습니다.")))
 
 
 if __name__ == "__main__":
