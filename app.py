@@ -30,7 +30,7 @@ client_claude = anthropic.Anthropic(api_key=claude_key) if claude_key else None
 # 나이스 API 설정
 NEIS_API_KEY = os.getenv("NEIS_API_KEY", "")
 ATPT_CODE = "H10"
-SCHUL_CODE = "74800093"
+SCHUL_CODE = "7480093"
 
 # =========================================================
 # 서버 메모리 저장소 (재시작 시 초기화됨)
