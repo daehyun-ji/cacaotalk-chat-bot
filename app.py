@@ -453,6 +453,85 @@ def game_luck():
     return jsonify(kakao_text(reply))
 
 
+# ── 5. 사다리타기 (/game-ladder) ──
+
+# 학교생활에서 자주 쓰는 결과 목록
+LADDER_RESULTS = {
+    "당번": ["청소 당번 당첨! 🧹", "오늘 청소 면제! 🎉", "화장실 청소 담당 💦", "교실 청소 담당 🧺", "쓰레기 버리기 담당 🗑️", "칠판 지우기 담당 ✏️"],
+    "역할": ["팀장 당첨! 👑", "서기 담당 📝", "발표자 담당 🎤", "자료 조사 담당 🔍", "PPT 제작 담당 💻", "시간 관리 담당 ⏰"],
+    "벌칙": ["음료수 사기 🥤", "간식 사오기 🍪", "노래 한 곡 부르기 🎵", "안마해주기 💆", "벌칙 면제! 🎊", "춤 한 번 추기 💃"],
+    "점심": ["오늘 밥 먹을 자리 배정: 창가 자리! 🪟", "오늘 밥 먹을 자리 배정: 가운데 자리!", "오늘 급식 먼저 받기 1번! 🥇", "오늘 급식 마지막 받기... 😢", "오늘 친구 옆자리 당첨! 👫", "오늘 선생님 옆자리... 😅"],
+    "기본": ["1등 당첨! 🥇", "2등 당첨! 🥈", "3등 당첨! 🥉", "꼴등... 😢", "중간 당첨!", "특별상 당첨! ✨"]
+}
+
+@app.route("/game-ladder", methods=["POST"])
+def game_ladder():
+    """
+    이름을 쉼표로 구분해서 입력하면 랜덤으로 결과를 배정해줍니다.
+    예) 철수,영희,민준
+    예) 철수,영희,민준/당번  (슬래시로 결과 종류 지정: 당번/역할/벌칙/점심)
+    """
+    data = request.get_json(silent=True) or {}
+    user_input = data.get("action", {}).get("params", {}).get("파라미터", "").strip()
+
+    if not user_input:
+        return jsonify(kakao_text(
+            "🪜 [사다리타기] 사용법\n\n"
+            "✏️ 이름을 쉼표(,)로 구분해서 입력하세요!\n\n"
+            "📌 기본 예시:\n철수,영희,민준\n\n"
+            "📌 종류 지정 예시 (슬래시 / 사용):\n"
+            "철수,영희,민준/당번\n"
+            "철수,영희,민준/벌칙\n"
+            "철수,영희,민준/역할\n"
+            "철수,영희,민준/점심"
+        ))
+
+    # 슬래시로 이름과 결과 종류 분리
+    if "/" in user_input:
+        name_part, category = user_input.rsplit("/", 1)
+        category = category.strip()
+    else:
+        name_part = user_input
+        category = "기본"
+
+    # 이름 파싱
+    names = [n.strip() for n in name_part.split(",") if n.strip()]
+
+    if len(names) < 2:
+        return jsonify(kakao_text("❗ 이름을 2명 이상 쉼표(,)로 구분해서 입력해주세요!\n예) 철수,영희,민준"))
+
+    if len(names) > 10:
+        return jsonify(kakao_text("❗ 이름은 최대 10명까지 입력 가능해요!"))
+
+    # 결과 목록 가져오기 (없는 카테고리면 기본으로)
+    results_pool = LADDER_RESULTS.get(category, LADDER_RESULTS["기본"])
+
+    # 결과 목록이 이름 수보다 적으면 번호로 보충
+    results = results_pool[:len(names)]
+    while len(results) < len(names):
+        results.append(f"{len(results) + 1}번 당첨!")
+
+    # 이름과 결과를 랜덤 매칭
+    shuffled_results = results.copy()
+    random.shuffle(shuffled_results)
+    pairings = list(zip(names, shuffled_results))
+
+    # 결과 메시지 생성
+    lines = [f"👤 {name}  →  {result}" for name, result in pairings]
+    result_text = "\n".join(lines)
+
+    category_label = category if category in LADDER_RESULTS else "기본"
+
+    reply = (
+        f"🪜 [사다리타기 결과] ({category_label})\n\n"
+        f"━━━━━━━━━━━━━━━━\n"
+        f"{result_text}\n"
+        f"━━━━━━━━━━━━━━━━\n\n"
+        f"🎲 결과가 마음에 안 들면 다시 입력해보세요!"
+    )
+    return jsonify(kakao_text(reply))
+
+
 # ── 레거시 엔드포인트 ──
 @app.route("/text", methods=["GET", "POST"])
 def text_skill(): return jsonify(kakao_text(str(random.randint(1, 10))))
