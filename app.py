@@ -29,8 +29,8 @@ client_claude = anthropic.Anthropic(api_key=claude_key) if claude_key else None
 
 # 나이스 API 설정
 NEIS_API_KEY = os.getenv("NEIS_API_KEY", "")
-ATPT_CODE = "H10"
-SCHUL_CODE = "7480093"
+ATPT_CODE = "B10"
+SCHUL_CODE = "7010537"
 
 # =========================================================
 # 서버 메모리 저장소 (재시작 시 초기화됨)
@@ -60,7 +60,7 @@ QUIZ_DATA = [
     {"type": "속담", "question": "공든 탑이 ___", "answer": "무너지랴", "hints": ["정성껏 쌓은 것은 쉽게 무너지지 않는다는 속담", "노력의 결과는 사라지지 않는다는 의미", "탑과 관련된 표현이야", "공들인 것의 결과에 관한 속담", "탑이 어떻게 될까? (부정형)"]},
     {"type": "속담", "question": "원숭이도 나무에서 ___", "answer": "떨어진다", "hints": ["아무리 뛰어난 사람도 실수할 수 있다는 뜻", "원숭이가 나무에서 하는 행동", "잘하는 사람도 실수한다는 의미", "나무에서 내려오는 것과 다른 표현", "중력과 관련된 동사야"]},
     {"type": "속담", "question": "세 살 버릇 ___까지 간다", "answer": "여든", "hints": ["어릴 때 습관이 평생 간다는 속담", "나이와 관련된 표현이야", "인생의 끝 무렵을 나타내는 나이", "60보다 크고 90보다 작은 숫자", "팔십이라고도 불러"]},
-    {"type": "속담", "question": "백지장도 ___ 낫다", "answer": "맞들면", "hints": ["협동과 협력에 관한 속담", "종이와 관련된 표현이야", "혼자보다 둘이 낫다는 의미", "白紙張(흰 종이)을 함께 드는 것", "전체 속담을 그대로 입력해봐"]},
+    {"type": "속담", "question": "백지장도 맞들면 낫다", "answer": "백지장도 맞들면 낫다", "hints": ["협동과 협력에 관한 속담", "종이와 관련된 표현이야", "혼자보다 둘이 낫다는 의미", "白紙張(흰 종이)을 함께 드는 것", "전체 속담을 그대로 입력해봐"]},
     {"type": "속담", "question": "하늘이 무너져도 솟아날 ___이/가 있다", "answer": "구멍", "hints": ["아무리 어려운 상황도 살 길이 있다는 뜻", "빠져나갈 수 있는 통로", "뚫려 있는 공간을 뜻하는 단어", "도넛 가운데 있는 것", "구_ (한 글자 힌트)"]},
     # 인물/캐릭터 퀴즈
     {"type": "캐릭터 퀴즈", "question": "저는 초록색 옷을 입고 공주를 구하러 다니며, 삼각형 모양의 유물을 모으는 게임의 주인공입니다. 저는 누구일까요?", "answer": "링크", "hints": ["닌텐도 게임의 캐릭터야", "젤다 시리즈의 주인공", "초록색 모자와 귀가 뾰족한 특징", "이름이 두 글자야", "ㄹ으로 시작하는 이름"]},
@@ -255,7 +255,7 @@ def school_timetable():
             lines = []
             for row in timetable_rows:
                 period = row.get("PERIO", "?")
-                subject = row.get("ITM_NM") or row.get("SBJT_NM", "자율/공백")
+                subject = row.get("ITRT_CNTNT") or row.get("ITM_NM") or row.get("SBJT_NM", "자율/공백")
                 lines.append(f"⏱️ {period}교시 : {subject}")
             timetable_text = "\n".join(lines)
             reply_text = f"📅 오늘 ({grade}학년 {room}반) 시간표:\n\n{timetable_text}"
@@ -294,7 +294,7 @@ def game_quiz_start():
         if q["type"] == "사자성어":
             guide = "✏️ 빈칸(▢▢)에 들어갈 2글자를 입력하세요!"
         else:
-            guide = "✏️ !정답을 채팅창에 입력 후 정답을 이야기해주세요!"
+            guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
 
         reply = (
             f"🎯 [{q['type']}] 진행 중인 퀴즈가 있어요!\n\n"
@@ -319,7 +319,7 @@ def game_quiz_start():
     if q["type"] == "사자성어":
         guide = "✏️ 빈칸(▢▢)에 들어갈 뒤 2글자를 입력하세요!\n예) 감래, 이조, 동풍 등"
     else:
-        guide = "✏️ !정답을 채팅창에 입력 후 정답을 이야기해주세요!"
+        guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
 
     reply = (
         f"🎯 [{q['type']}] 퀴즈 시작!\n\n"
@@ -327,7 +327,7 @@ def game_quiz_start():
         f"━━━━━━━━━━━━━━━━\n"
         f"{guide}\n"
         f"🎲 기회: 5번  💡 틀릴 때마다 힌트 제공\n"
-        f"⭕ 정답을 입력하려면 !정답을 입력 후 답을 적어주세요!\n"
+        f"⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
         f"🔄 포기하려면 '포기'를 입력하세요"
     )
     return jsonify(kakao_text(reply))
@@ -374,7 +374,7 @@ def game_quiz_answer():
             f"❓ {display}\n"
             f"✅ 정답: 【{q['answer']}】\n\n"
             f"도전 횟수: {tries}번 만에 성공!\n"
-            f"🎯 새 퀴즈를 시작하려면 !퀴즈를 입력해주세요!"
+            f"🎯 새 퀴즈를 시작하려면 퀴즈 버튼을 눌러주세요!"
         ))
 
     # 오답 처리
@@ -390,7 +390,7 @@ def game_quiz_answer():
             f"💀 아쉽게도 기회를 모두 소진했어요!\n\n"
             f"❓ {display}\n"
             f"✅ 정답: 【{answer}】\n\n"
-            f"🔄 새 퀴즈를 시작하려면 !퀴즈를 입력해주세요!"
+            f"🔄 새 퀴즈를 시작하려면 퀴즈 버튼을 눌러주세요!"
         ))
 
     # 힌트 제공
@@ -401,7 +401,7 @@ def game_quiz_answer():
     if q["type"] == "사자성어":
         guide = "▢▢에 들어갈 2글자를 입력해주세요!"
     else:
-        guide = "정답을 입력해주세요!"
+        guide = "⭕️ !정답을 채팅창에 입력후 정답을 적어주세요!"
 
     return jsonify(kakao_text(
         f"❌ 틀렸어요! 다시 도전해보세요.\n\n"
