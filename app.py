@@ -372,18 +372,23 @@ def game_quiz_answer():
 def game_updown():
     data = request.get_json(silent=True) or {}
     user_val = data.get("action", {}).get("params", {}).get("파라미터", "").strip()
-    target = (datetime.now().minute % 100) + 1
+    
+    # [수정] 분 대신 '날짜'를 활용하여 최소한 몇 분 사이에 정답이 바뀌는 버그 방지
+    # 오늘 날짜 기반으로 1~100 사이의 고정된 숫자가 나옵니다.
+    target = (datetime.today().day * 7 % 100) + 1 
+    
     try:
         val_match = re.search(r'\d+', user_val)
         if val_match:
             val = int(val_match.group())
-            if val > target:   res = f"⬇️ DOWN! {val}보다 낮습니다."
-            elif val < target: res = f"⬆️ UP! {val}보다 높습니다."
-            else:              res = f"🎊 정답! {val}이 맞습니다!"
+            if val > target:   res = f"⬇️ DOWN! 입력하신 {val}보다 낮습니다. 다른 숫자를 쳐보세요!"
+            elif val < target: res = f"⬆️ UP! 입력하신 {val}보다 높습니다. 다른 숫자를 쳐보세요!"
+            else:              res = f"🎊 정답입니다! 축하합니다. 오늘의 정답은 {val}이었습니다!"
         else:
-            res = "숫자를 포함해서 입력해주세요! (예: 50)"
+            res = "숫자를 포함해서 말해주세요! (예: 50)"
     except Exception:
-        res = "숫자로 다시 입력해주세요!"
+        res = "숫자 판정 중 오류가 발생했습니다."
+        
     return jsonify(kakao_text(f"🔢 [업다운 숫자맞추기]\n\n{res}"))
 
 
